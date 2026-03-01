@@ -28,6 +28,9 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       JAVA_OPTS: "-Xms512m -Xmx1024m"
     
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
     ports:
       # 映射应用端口：主机:容器
       - "${APP_PORT:-8001}:8001"
