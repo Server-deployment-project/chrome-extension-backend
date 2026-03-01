@@ -169,7 +169,11 @@ public class VisionController {
     private List<Map<String, Object>> buildHistory(VisionRequest request, Conversation conversation) {
         if (request.getHistory() != null && !request.getHistory().isEmpty()) {
             return request.getHistory().stream()
-                    .map(h -> (Map<String, Object>) new HashMap<>(h))
+                    .map(h -> {
+                        Map<String, Object> map = new HashMap<>();
+                        h.forEach(map::put);
+                        return map;
+                    })
                     .collect(Collectors.toList());
         }
         

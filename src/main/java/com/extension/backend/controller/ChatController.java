@@ -197,7 +197,11 @@ public class ChatController {
         // 加载历史记录
         if (request.getHistory() != null && !request.getHistory().isEmpty()) {
             messages.addAll(request.getHistory().stream()
-                    .map(h -> (Map<String, Object>) new HashMap<>(h))
+                    .map(h -> {
+                        Map<String, Object> map = new HashMap<>();
+                        h.forEach(map::put);
+                        return map;
+                    })
                     .collect(Collectors.toList()));
         } else {
             // 从数据库加载历史
