@@ -1,32 +1,27 @@
 package com.extension.backend.controller;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ServerWebExchange;
-
 import com.extension.backend.constant.PromptConstants;
 import com.extension.backend.dto.ChatRequest;
 import com.extension.backend.entity.Conversation;
 import com.extension.backend.entity.Message;
 import com.extension.backend.entity.User;
+import com.extension.backend.exception.BusinessException;
 import com.extension.backend.service.ConversationService;
 import com.extension.backend.service.SiliconFlowService;
 import com.extension.backend.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import main.java.com.extension.backend.exception.BusinessException;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 聊天控制器 - 处理文本对话

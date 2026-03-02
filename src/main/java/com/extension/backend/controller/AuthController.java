@@ -1,23 +1,21 @@
 package com.extension.backend.controller;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import com.extension.backend.dto.ApiResponse;
 import com.extension.backend.dto.LoginRequest;
 import com.extension.backend.dto.RegisterRequest;
 import com.extension.backend.entity.User;
+import com.extension.backend.exception.BusinessException;
 import com.extension.backend.service.UserService;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import main.java.com.extension.backend.exception.BusinessException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 认证控制器 - 注册、登录、重置密码

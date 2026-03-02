@@ -1,19 +1,17 @@
 package com.extension.backend.service;
 
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.Base64;
-
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.extension.backend.entity.User;
+import com.extension.backend.exception.BusinessException;
+import com.extension.backend.mapper.UserMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.extension.backend.entity.User;
-import com.extension.backend.mapper.UserMapper;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import main.java.com.extension.backend.exception.BusinessException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
 
 /**
  * 用户服务
