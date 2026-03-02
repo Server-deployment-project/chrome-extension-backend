@@ -1,5 +1,7 @@
 package com.extension.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Data;
 
 /**
@@ -7,10 +9,11 @@ import lombok.Data;
  */
 @Data
 public class RegisterRequest {
-    
+
     private String email;
-    
+
     private String password;
-    
+
+    @JsonProperty("confirm_password")
     private String confirmPassword;
 }
