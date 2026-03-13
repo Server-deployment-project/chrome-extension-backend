@@ -29,6 +29,12 @@ public class SiliconFlowService {
     
     /**
      * 流式聊天接口
+     * 
+     * 参数优先级：
+     * 1. 如果传入了完整的自定义配置（apiKey、apiBase、model都不为空），则使用自定义配置
+     * 2. 否则使用系统默认配置
+     * 
+     * 注意：必须同时提供apiKey、apiBase和model三个参数才能使用自定义配置
      */
     public Flux<String> chatStream(
             List<Map<String, Object>> messages,
@@ -38,15 +44,38 @@ public class SiliconFlowService {
             Double temperature,
             Integer maxTokens) {
         
-        String effectiveApiKey = (apiKey != null && !apiKey.isEmpty()) ? apiKey : llmConfig.getApiKey();
-        String effectiveApiBase = (apiBase != null && !apiBase.isEmpty()) ? apiBase : llmConfig.getApiBase();
-        String effectiveModel = (model != null && !model.isEmpty()) ? model : llmConfig.getDefaultModel();
+        // 检查是否提供了完整的自定义配置（trim后不为空）
+        boolean hasFullCustomConfig = apiKey != null && !apiKey.trim().isEmpty() 
+                && apiBase != null && !apiBase.trim().isEmpty() 
+                && model != null && !model.trim().isEmpty();
+        
+        // 根据配置完整性决定使用哪个配置
+        String effectiveApiKey;
+        String effectiveApiBase;
+        String effectiveModel;
+        
+        if (hasFullCustomConfig) {
+            // 使用完整的自定义配置
+            effectiveApiKey = apiKey.trim();
+            effectiveApiBase = apiBase.trim();
+            effectiveModel = model.trim();
+            log.info("使用自定义文本配置 - Model: {}, API Base: {}", effectiveModel, effectiveApiBase);
+        } else {
+            // 使用系统默认配置
+            effectiveApiKey = llmConfig.getApiKey();
+            effectiveApiBase = llmConfig.getApiBase();
+            effectiveModel = llmConfig.getDefaultModel();
+            log.info("使用系统默认配置 - Model: {}, API Base: {}", effectiveModel, effectiveApiBase);
+        }
         
         if (effectiveApiKey == null || effectiveApiKey.isEmpty()) {
             return Flux.just("data: " + createErrorJson("API_KEY not configured") + "\n\n");
         }
         
-        String url = effectiveApiBase + "/chat/completions";
+        // 确保 URL 正确拼接，移除尾部斜杠
+        String baseUrl = effectiveApiBase.endsWith("/") ? 
+                effectiveApiBase.substring(0, effectiveApiBase.length() - 1) : effectiveApiBase;
+        String url = baseUrl + "/chat/completions";
         
         Map<String, Object> payload = new HashMap<>();
         payload.put("model", effectiveModel);
@@ -79,6 +108,12 @@ public class SiliconFlowService {
     
     /**
      * 流式视觉接口
+     * 
+     * 参数优先级：
+     * 1. 如果传入了完整的自定义配置（apiKey、apiBase、model都不为空），则使用自定义配置
+     * 2. 否则使用系统默认配置
+     * 
+     * 注意：必须同时提供apiKey、apiBase和model三个参数才能使用自定义配置
      */
     public Flux<String> visionStream(
             String image,
@@ -91,15 +126,38 @@ public class SiliconFlowService {
             Double temperature,
             Integer maxTokens) {
         
-        String effectiveApiKey = (apiKey != null && !apiKey.isEmpty()) ? apiKey : llmConfig.getApiKey();
-        String effectiveApiBase = (apiBase != null && !apiBase.isEmpty()) ? apiBase : llmConfig.getApiBase();
-        String effectiveModel = (model != null && !model.isEmpty()) ? model : llmConfig.getVisionModel();
+        // 检查是否提供了完整的自定义配置（trim后不为空）
+        boolean hasFullCustomConfig = apiKey != null && !apiKey.trim().isEmpty() 
+                && apiBase != null && !apiBase.trim().isEmpty() 
+                && model != null && !model.trim().isEmpty();
+        
+        // 根据配置完整性决定使用哪个配置
+        String effectiveApiKey;
+        String effectiveApiBase;
+        String effectiveModel;
+        
+        if (hasFullCustomConfig) {
+            // 使用完整的自定义配置
+            effectiveApiKey = apiKey.trim();
+            effectiveApiBase = apiBase.trim();
+            effectiveModel = model.trim();
+            log.info("使用自定义视觉配置 - Model: {}, API Base: {}", effectiveModel, effectiveApiBase);
+        } else {
+            // 使用系统默认配置
+            effectiveApiKey = llmConfig.getApiKey();
+            effectiveApiBase = llmConfig.getApiBase();
+            effectiveModel = llmConfig.getVisionModel();
+            log.info("使用系统默认配置 - Model: {}, API Base: {}", effectiveModel, effectiveApiBase);
+        }
         
         if (effectiveApiKey == null || effectiveApiKey.isEmpty()) {
             return Flux.just("data: " + createErrorJson("API_KEY not configured") + "\n\n");
         }
         
-        String url = effectiveApiBase + "/chat/completions";
+        // 确保 URL 正确拼接，移除尾部斜杠
+        String baseUrl = effectiveApiBase.endsWith("/") ? 
+                effectiveApiBase.substring(0, effectiveApiBase.length() - 1) : effectiveApiBase;
+        String url = baseUrl + "/chat/completions";
         
         // 构建消息列表
         List<Map<String, Object>> messages = new java.util.ArrayList<>();

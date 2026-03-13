@@ -91,30 +91,48 @@ public class UserConfigController {
 
         return Mono.fromCallable(() -> {
             // 更新文本配置
+            // 注意：只有当所有三个字段（apiKey、apiBase、model）都不为空时，才视为完整的自定义配置
             if (request.getText() != null) {
                 UserConfigRequest.TextConfig textConfig = request.getText();
+                
+                // apiKey包含"..."表示是前端返回的脱敏数据，不更新
                 if (textConfig.getApiKey() != null && !textConfig.getApiKey().contains("...")) {
-                    user.setCustomTextApiKey(textConfig.getApiKey().isEmpty() ? null : textConfig.getApiKey());
+                    String trimmedKey = textConfig.getApiKey().trim();
+                    // 空字符串转为null，表示清除配置
+                    user.setCustomTextApiKey(trimmedKey.isEmpty() ? null : trimmedKey);
                 }
+                
+                // apiBase和model允许设置为空字符串来清除配置
                 if (textConfig.getApiBase() != null) {
-                    user.setCustomTextApiBase(textConfig.getApiBase());
+                    String trimmedBase = textConfig.getApiBase().trim();
+                    user.setCustomTextApiBase(trimmedBase.isEmpty() ? null : trimmedBase);
                 }
                 if (textConfig.getModel() != null) {
-                    user.setCustomTextModel(textConfig.getModel());
+                    String trimmedModel = textConfig.getModel().trim();
+                    user.setCustomTextModel(trimmedModel.isEmpty() ? null : trimmedModel);
                 }
             }
 
             // 更新视觉配置
+            // 注意：只有当所有三个字段（apiKey、apiBase、model）都不为空时，才视为完整的自定义配置
             if (request.getVision() != null) {
                 UserConfigRequest.VisionConfig visionConfig = request.getVision();
+                
+                // apiKey包含"..."表示是前端返回的脱敏数据，不更新
                 if (visionConfig.getApiKey() != null && !visionConfig.getApiKey().contains("...")) {
-                    user.setCustomVisionApiKey(visionConfig.getApiKey().isEmpty() ? null : visionConfig.getApiKey());
+                    String trimmedKey = visionConfig.getApiKey().trim();
+                    // 空字符串转为null，表示清除配置
+                    user.setCustomVisionApiKey(trimmedKey.isEmpty() ? null : trimmedKey);
                 }
+                
+                // apiBase和model允许设置为空字符串来清除配置
                 if (visionConfig.getApiBase() != null) {
-                    user.setCustomVisionApiBase(visionConfig.getApiBase());
+                    String trimmedBase = visionConfig.getApiBase().trim();
+                    user.setCustomVisionApiBase(trimmedBase.isEmpty() ? null : trimmedBase);
                 }
                 if (visionConfig.getModel() != null) {
-                    user.setCustomVisionModel(visionConfig.getModel());
+                    String trimmedModel = visionConfig.getModel().trim();
+                    user.setCustomVisionModel(trimmedModel.isEmpty() ? null : trimmedModel);
                 }
             }
 

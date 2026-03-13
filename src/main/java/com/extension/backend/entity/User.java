@@ -59,17 +59,21 @@ public class User {
     
     /**
      * 是否使用自定义文本配置
+     * 必须同时配置apiKey、apiBase和model才算完整的自定义配置
      */
     public boolean hasCustomTextConfig() {
         return customTextApiKey != null && !customTextApiKey.isEmpty() 
+                && customTextApiBase != null && !customTextApiBase.isEmpty()
                 && customTextModel != null && !customTextModel.isEmpty();
     }
     
     /**
      * 是否使用自定义视觉配置
+     * 必须同时配置apiKey、apiBase和model才算完整的自定义配置
      */
     public boolean hasCustomVisionConfig() {
         return customVisionApiKey != null && !customVisionApiKey.isEmpty() 
+                && customVisionApiBase != null && !customVisionApiBase.isEmpty()
                 && customVisionModel != null && !customVisionModel.isEmpty();
     }
 }
