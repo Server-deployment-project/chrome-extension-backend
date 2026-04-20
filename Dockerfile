@@ -1,30 +1,19 @@
+# syntax=docker/dockerfile:1.7
+
 # ===== Build stage =====
 FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /build
 
-# 配置腾讯云Maven镜像加速
-RUN mkdir -p /root/.m2 && \
-    echo '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" \
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" \
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd"> \
-          <mirrors> \
-            <mirror> \
-              <id>tencent</id> \
-              <mirrorOf>central</mirrorOf> \
-              <name>Tencent Maven Mirror</name> \
-              <url>http://mirrors.cloud.tencent.com/nexus/repository/maven-public/</url> \
-            </mirror> \
-          </mirrors> \
-        </settings>' > /root/.m2/settings.xml
-
 # 复制 pom.xml 先下载依赖（利用Docker层缓存）
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:go-offline -B -q
 
 # 复制源代码并编译
 COPY src ./src
-RUN mvn clean package -DskipTests -q
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -DskipTests -B -q
 
 # ===== Runtime stage =====
 FROM eclipse-temurin:17-jre-alpine
