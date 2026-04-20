@@ -1,0 +1,124 @@
+name: backend-image-release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Image version tag, for example: 1.4.2"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: chrome-extension-backend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="${{ inputs.version }}"
+          fi
+
+          if [[ -z "${VERSION}" ]]; then
+            echo "Version is empty"
+            exit 1
+          fi
+
+          if [[ "${VERSION}" == "latest" ]]; then
+            echo "Version tag must not be latest"
+            exit 1
+          fi
+
+          if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+)*$ ]]; then
+            echo "Version must look like semantic version, example: 1.2.3 or 1.2.3-rc1"
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Resolve image repos
+        id: image
+        shell: bash
+        run: |
+          OWNER_LOWER="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          REPO_NAME_LOWER="$(echo "${GITHUB_REPOSITORY##*/}" | tr '[:upper:]' '[:lower:]')"
+
+          GHCR_IMAGE="${{ vars.GHCR_IMAGE }}"
+          if [[ -z "${GHCR_IMAGE}" ]]; then
+            GHCR_IMAGE="ghcr.io/${OWNER_LOWER}/${IMAGE_NAME}"
+          fi
+
+          DOCKERHUB_IMAGE="${{ vars.DOCKERHUB_IMAGE }}"
+          if [[ -z "${DOCKERHUB_IMAGE}" && -n "${{ vars.DOCKERHUB_NAMESPACE }}" ]]; then
+            DOCKERHUB_IMAGE="${{ vars.DOCKERHUB_NAMESPACE }}/${REPO_NAME_LOWER}"
+          fi
+          DOCKERHUB_ENABLED="false"
+          if [[ -n "${DOCKERHUB_IMAGE}" && -n "${{ secrets.DOCKERHUB_USERNAME }}" && -n "${{ secrets.DOCKERHUB_TOKEN }}" ]]; then
+            DOCKERHUB_ENABLED="true"
+          fi
+
+          echo "ghcr=${GHCR_IMAGE}" >> "${GITHUB_OUTPUT}"
+          echo "dockerhub=${DOCKERHUB_IMAGE}" >> "${GITHUB_OUTPUT}"
+          echo "dockerhub_enabled=${DOCKERHUB_ENABLED}" >> "${GITHUB_OUTPUT}"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        if: ${{ steps.image.outputs.dockerhub_enabled == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build tags
+        id: tags
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHORT_SHA="${GITHUB_SHA::7}"
+
+          TAGS="${{ steps.image.outputs.ghcr }}:${VERSION}"$'\n'"${{ steps.image.outputs.ghcr }}:sha-${SHORT_SHA}"
+
+          if [[ "${{ steps.image.outputs.dockerhub_enabled }}" == "true" ]]; then
+            TAGS="${TAGS}"$'\n'"${{ steps.image.outputs.dockerhub }}:${VERSION}"$'\n'"${{ steps.image.outputs.dockerhub }}:sha-${SHORT_SHA}"
+          fi
+
+          {
+            echo "list<<EOF"
+            printf "%s\n" "${TAGS}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.list }}
+          provenance: false
