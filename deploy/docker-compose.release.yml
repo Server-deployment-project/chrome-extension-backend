@@ -1,0 +1,44 @@
+services:
+  backend:
+    image: ${IMAGE_REPO:?IMAGE_REPO is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: chrome-ext-backend
+    hostname: backend
+    restart: unless-stopped
+    pull_policy: always
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/chrome_extension_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 20
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_API_BASE: ${LLM_API_BASE}
+      LLM_DEFAULT_MODEL: ${LLM_DEFAULT_MODEL}
+      LLM_VISION_MODEL: ${LLM_VISION_MODEL}
+      LOGGING_LEVEL_ROOT: WARN
+      LOGGING_LEVEL_COM_EXTENSION_BACKEND: INFO
+      SPRING_PROFILES_ACTIVE: docker
+      JAVA_OPTS: "-Xms512m -Xmx1024m"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${APP_PORT:-8001}:8001"
+    volumes:
+      - ./logs:/var/log
+      - ./uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          cpus: "1"
+          memory: 1G
+
