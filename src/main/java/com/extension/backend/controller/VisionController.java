@@ -49,14 +49,15 @@ public class VisionController {
             throw BusinessException.unauthorized("Invalid or inactive extension token");
         }
         
-        // 验证参数：image 必填
-        if (request.getImage() == null || request.getImage().isEmpty()) {
-            throw BusinessException.badRequest("image is required");
+        // 验证参数：至少需要一张图片
+        List<String> images = normalizeImages(request);
+        if (images.isEmpty()) {
+            throw BusinessException.badRequest("image or images is required");
         }
         
         try {
-            log.info("Vision request from user: {}, action: {}, conversationId: {}", 
-                    user.getEmail(), request.getAction(), request.getConversationId());
+            log.info("Vision request from user: {}, action: {}, conversationId: {}, imageCount: {}",
+                    user.getEmail(), request.getAction(), request.getConversationId(), images.size());
             
             // 判断是否使用自定义配置
             boolean isCustom = user.hasCustomVisionConfig();
@@ -76,7 +77,7 @@ public class VisionController {
             // 保存用户消息到数据库
             String userContent = request.getContent() != null ? request.getContent() : 
                     PromptConstants.VISION_DEFAULT_USER_MESSAGE;
-            saveMessageAsync(conversation.getId(), "user", "[图片] " + userContent);
+            saveMessageAsync(conversation.getId(), "user", "[图片x" + images.size() + "] " + userContent);
             
             // 更新请求计数
             if (!isCustom) {
@@ -96,7 +97,7 @@ public class VisionController {
             
             // 调用 LLM 服务
             Flux<String> stream = siliconFlowService.visionStream(
-                    request.getImage(),
+                    images,
                     systemPrompt,
                     userContent,
                     history,
@@ -105,7 +106,11 @@ public class VisionController {
                     request.getModel() != null ? request.getModel() : user.getCustomVisionModel(),
                     request.getTemperature(),
                     request.getMaxTokens()
-            )
+            );
+            
+            // 在流最前面注入包含 conversation_id 的前置数据包
+            String initEvent = "data: {\"conversation_id\":\"" + conversation.getId() + "\"}\n\n";
+            stream = stream.startWith(initEvent)
             .doOnNext(chunk -> {
                 // 解析并提取 content
                 try {
@@ -177,6 +182,27 @@ public class VisionController {
             return content.length() > 20 ? content.substring(0, 20) : content;
         }
         return "图片分析";
+    }
+
+    /**
+     * 兼容 image(单图) 和 images(多图) 字段，统一归一化为图片列表
+     */
+    private List<String> normalizeImages(VisionRequest request) {
+        List<String> normalized = new ArrayList<>();
+
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            for (String image : request.getImages()) {
+                if (image != null && !image.isBlank()) {
+                    normalized.add(image.trim());
+                }
+            }
+        }
+
+        if (normalized.isEmpty() && request.getImage() != null && !request.getImage().isBlank()) {
+            normalized.add(request.getImage().trim());
+        }
+
+        return normalized;
     }
     
     /**

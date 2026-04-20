@@ -104,7 +104,11 @@ public class ChatController {
                     user.getCustomTextApiBase(),
                     request.getModel() != null ? request.getModel() : user.getCustomTextModel(),
                     request.getTemperature(),
-                    request.getMaxTokens())
+                    request.getMaxTokens());
+            
+            // 在流最前面注入包含 conversation_id 的前置数据包
+            String initEvent = "data: {\"conversation_id\":\"" + conversation.getId() + "\"}\n\n";
+            stream = stream.startWith(initEvent)
                     .doOnNext(chunk -> {
                         // 解析并提取 content
                         try {

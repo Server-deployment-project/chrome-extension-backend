@@ -42,7 +42,10 @@ Thumbs.db
 *.log
 
 # Application
-application-local.ymlapplication-dev.yml
+application-local.yml
+application-dev.yml
+config/application-private.yml
+!config/application-private.example.yml
 
 # Docker & Environment
 .env

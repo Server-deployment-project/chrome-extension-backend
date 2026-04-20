@@ -22,6 +22,9 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class SiliconFlowService {
+
+    private static final String LOCAL_PRIVATE_CONFIG_PATH = "config/application-private.yml";
+    private static final String PLACEHOLDER_API_KEY = "sk-your-key";
     
     private final WebClient webClient;
     private final LlmConfig llmConfig;
@@ -66,10 +69,15 @@ public class SiliconFlowService {
             effectiveApiBase = llmConfig.getApiBase();
             effectiveModel = llmConfig.getDefaultModel();
             log.info("使用系统默认配置 - Model: {}, API Base: {}", effectiveModel, effectiveApiBase);
+
+            String configError = validateSystemConfig(effectiveApiKey, effectiveApiBase, effectiveModel, "文本");
+            if (configError != null) {
+                return Flux.just(configError);
+            }
         }
         
         if (effectiveApiKey == null || effectiveApiKey.isEmpty()) {
-            return Flux.just("data: " + createErrorJson("API_KEY not configured") + "\n\n");
+            return Flux.just(createErrorJson("API_KEY not configured"));
         }
         
         // 确保 URL 正确拼接，移除尾部斜杠
@@ -102,7 +110,7 @@ public class SiliconFlowService {
                 .doOnError(error -> log.error("Stream error: ", error))
                 .onErrorResume(error -> {
                     String errorJson = createErrorJson("Stream error: " + error.getMessage());
-                    return Flux.just("data: " + errorJson + "\n\n");
+                    return Flux.just(errorJson);
                 });
     }
     
@@ -116,7 +124,7 @@ public class SiliconFlowService {
      * 注意：必须同时提供apiKey、apiBase和model三个参数才能使用自定义配置
      */
     public Flux<String> visionStream(
-            String image,
+            List<String> images,
             String prompt,
             String content,
             List<Map<String, Object>> history,
@@ -148,10 +156,15 @@ public class SiliconFlowService {
             effectiveApiBase = llmConfig.getApiBase();
             effectiveModel = llmConfig.getVisionModel();
             log.info("使用系统默认配置 - Model: {}, API Base: {}", effectiveModel, effectiveApiBase);
+
+            String configError = validateSystemConfig(effectiveApiKey, effectiveApiBase, effectiveModel, "视觉");
+            if (configError != null) {
+                return Flux.just(configError);
+            }
         }
         
         if (effectiveApiKey == null || effectiveApiKey.isEmpty()) {
-            return Flux.just("data: " + createErrorJson("API_KEY not configured") + "\n\n");
+            return Flux.just(createErrorJson("API_KEY not configured"));
         }
         
         // 确保 URL 正确拼接，移除尾部斜杠
@@ -179,18 +192,25 @@ public class SiliconFlowService {
         
         List<Map<String, Object>> contentList = new java.util.ArrayList<>();
         
-        // 添加图片
-        Map<String, Object> imageContent = new HashMap<>();
-        imageContent.put("type", "image_url");
-        Map<String, String> imageUrl = new HashMap<>();
-        imageUrl.put("url", image);
-        imageContent.put("image_url", imageUrl);
-        contentList.add(imageContent);
+        // 添加图片（支持多图）
+        if (images != null) {
+            for (String image : images) {
+                if (image == null || image.isBlank()) {
+                    continue;
+                }
+                Map<String, Object> imageContent = new HashMap<>();
+                imageContent.put("type", "image_url");
+                Map<String, String> imageUrl = new HashMap<>();
+                imageUrl.put("url", image);
+                imageContent.put("image_url", imageUrl);
+                contentList.add(imageContent);
+            }
+        }
         
         // 添加文本
         Map<String, Object> textContent = new HashMap<>();
         textContent.put("type", "text");
-        textContent.put("text", content);
+        textContent.put("text", content != null ? content : "");
         contentList.add(textContent);
         
         userMessage.put("content", contentList);
@@ -221,8 +241,21 @@ public class SiliconFlowService {
                 .doOnError(error -> log.error("Vision stream error: ", error))
                 .onErrorResume(error -> {
                     String errorJson = createErrorJson("Vision stream error: " + error.getMessage());
-                    return Flux.just("data: " + errorJson + "\n\n");
+                    return Flux.just(errorJson);
                 });
+    }
+
+    private String validateSystemConfig(String apiKey, String apiBase, String model, String scene) {
+        if (apiKey == null || apiKey.isBlank() || PLACEHOLDER_API_KEY.equals(apiKey.trim())) {
+            return createErrorJson("LLM API Key 未配置，请检查 " + LOCAL_PRIVATE_CONFIG_PATH);
+        }
+        if (apiBase == null || apiBase.isBlank()) {
+            return createErrorJson(scene + " API Base 未配置，请检查 " + LOCAL_PRIVATE_CONFIG_PATH);
+        }
+        if (model == null || model.isBlank()) {
+            return createErrorJson(scene + " 模型未配置，请检查 " + LOCAL_PRIVATE_CONFIG_PATH);
+        }
+        return null;
     }
     
     /**

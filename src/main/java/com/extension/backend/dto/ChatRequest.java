@@ -1,5 +1,6 @@
 package com.extension.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
@@ -25,5 +26,6 @@ public class ChatRequest {
     
     private Integer maxTokens = 4096; // 最大 token 数
     
+    @JsonProperty("conversation_id")
     private String conversationId; // 会话 ID
 }

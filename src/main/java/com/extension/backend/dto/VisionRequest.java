@@ -1,5 +1,6 @@
 package com.extension.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
@@ -14,6 +15,8 @@ public class VisionRequest {
     private String action; // "analyze" or "chat"
     
     private String image; // 图片 URL 或 Base64
+
+    private List<String> images; // 多图 URL 或 Base64 列表
     
     private String content; // 用户的问题
     
@@ -27,5 +30,6 @@ public class VisionRequest {
     
     private Integer maxTokens = 4096;
     
+    @JsonProperty("conversation_id")
     private String conversationId; // 会话 ID
 }

@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: chrome-extension-backend
+  config:
+    import: optional:file:./config/application-private.yml
   
   datasource:
     url: jdbc:mysql://localhost:3306/chrome_extension_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=utf8
@@ -38,8 +40,8 @@ logging:
 # LLM API 配置
 app:
   llm:
-    api-key: ${LLM_API_KEY:sk-your-key}
-    api-base: ${LLM_API_BASE:https://api.siliconflow.cn/v1}
-    default-model: ${LLM_DEFAULT_MODEL:Qwen/Qwen2.5-7B-Instruct}
-    vision-model: ${LLM_VISION_MODEL:Qwen/Qwen2-VL-72B-Instruct}
+    api-key: ""
+    api-base: https://api.siliconflow.cn/v1
+    default-model: deepseek-ai/DeepSeek-V3.2
+    vision-model: Qwen/Qwen3.5-35B-A3B
     timeout: 60000
